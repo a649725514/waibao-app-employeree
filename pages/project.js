@@ -21,6 +21,8 @@ import Process from '../components/process';
 import Selfsay from '../components/selfsay';
 import Notice from '../components/notice';
 import Changeproject from './changeproject';
+import Comment from '../components/comment';
+import Task from './task';
 var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
 const rowHeight = 40;
@@ -43,6 +45,15 @@ export default class Project extends Component {
             navigator.push({
                 name: 'Changeproject',
                 component: Changeproject
+            });
+        }
+    }
+    Jump_to_task () {
+        const { navigator } = this.props;
+        if (navigator) {
+            navigator.push({
+                name: 'Task',
+                component: Task
             });
         }
     }
@@ -78,6 +89,7 @@ export default class Project extends Component {
                         <Bolddivider />
                         <Notice />
                         <Bolddivider />
+                        <Comment press={this.Jump_to_task.bind(this)} />
                     </ScrollView>
                 </View>
             </View>

@@ -21,6 +21,7 @@ import Process from '../components/process';
 import Selfsay from '../components/selfsay';
 import Notice from '../components/notice';
 import Changetask from './changetask';
+import Comment1 from '../components/comment1';
 var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
 const rowHeight = 40;
@@ -74,6 +75,7 @@ export default class Task extends Component {
                         <Bolddivider />
                         <Selfsay title={'任务说明'} />
                         <Bolddivider />
+                        <Comment1 />
                     </ScrollView>
                 </View>
             </View>
