@@ -6,7 +6,8 @@ import {
     Dimensions,
     Image,
     TextInput,
-    StyleSheet
+    StyleSheet,
+    AsyncStorage
 } from 'react-native';
 import PropTypes from 'prop-types';
 import Bolddivider from './bolddivider';
@@ -18,9 +19,43 @@ export default class Taskmessage extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
-
+            count: 0,
         };
     };
+
+    componentWillMount() {
+        AsyncStorage.getItem('token', (error, result) => {
+            if (!error) {
+                var url = 'http://120.78.74.75:8080/demo/s/getCountOfTask?id=' + this.props.id; // 接口url
+                fetch(url, {
+                    "method": 'GET',
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + result
+                    },
+                })
+                    .then(
+                        (res) => {
+                            if (res.ok) {
+                                return res.json()
+                            } else {
+                                console.log(res)
+                                throw new Error('BIG_ERROR')
+                            }
+
+                        }
+                    ).then((PromiseValue) => {
+                        this.setState({
+                            count: PromiseValue,
+                        })
+                    })
+                    .catch((error) => { // 错误处理
+
+                    })
+                    .done();
+            }
+        })
+    }
 
     render() {
         return (
@@ -40,9 +75,7 @@ export default class Taskmessage extends React.Component {
                     <View style={{
                         width: width / 2,
                         height: 50,
-                        justifyContent: 'flex-start',
-                        flexDirection: 'row',
-                        alignItems: 'center'
+                        justifyContent: 'center'
                     }}>
                         <Text style={{ color: 'black', fontSize: 18, marginLeft: 20 }}>{this.props.name}</Text>
                         <TouchableOpacity style={{
@@ -59,7 +92,7 @@ export default class Taskmessage extends React.Component {
                     }}>
                         <Rating
                             type="star"
-                            startingValue={2}
+                            startingValue={this.props.stars}
                             readonly
                             imageSize={15}
                             ratingCount={3}
@@ -74,7 +107,7 @@ export default class Taskmessage extends React.Component {
                     marginLeft: 20
                 }}>
                     <Breadcrumb
-                        entities={['截止于' + this.props.date, this.props.project, this.props.count + '人参与', this.props.time + '工作量']}
+                        entities={['截止于' + this.props.date ? this.props.date : '未定', this.props.project, this.state.count + '人参与', this.props.time + '工作量']}
                         isTouchable={false}
                         flowDepth={0}
                         height={22}

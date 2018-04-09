@@ -7,7 +7,8 @@ import {
     Image,
     TextInput,
     StyleSheet,
-    ListView
+    ListView,
+    AsyncStorage
 } from 'react-native';
 import PropTypes from 'prop-types';
 import Bolddivider from './bolddivider';
@@ -15,25 +16,7 @@ import StepIndicator from 'react-native-step-indicator';
 import Button from './button';
 var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
-const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-const data = [
-    {
-        title: '发布',
-        body: '2017-12-15'
-    },
-    {
-        title: '编码',
-        body: '2018-1-3'
-    },
-    {
-        title: '交付',
-        body: ''
-    },
-    {
-        title: '完工',
-        body: ''
-    },
-]
+
 const stepIndicatorStyles = {
     stepIndicatorSize: 30,
     currentStepIndicatorSize: 40,
@@ -57,12 +40,79 @@ const stepIndicatorStyles = {
 export default class Process extends React.Component {
     constructor(props) {
         super(props);
+        var ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
+        var data = [
+            {
+                title: '发布',
+                body: ''
+            },
+            {
+                title: '编码',
+                body: ''
+            },
+            {
+                title: '交付',
+                body: ''
+            },
+            {
+                title: '完工',
+                body: ''
+            },
+        ]
+
         this.state = {
             dataSource: ds.cloneWithRows(data),
-            currentPage: 1
+            db: data,
+            currentPage: 0
         };
+        AsyncStorage.getItem('token', (error, result) => {
+            if (!error) {
+                var url = 'http://120.78.74.75:8080/demo/s/getTaskInfoById?id=' + this.props.id; // 接口url
+                fetch(url, {
+                    "method": 'GET',
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + result
+                    },
+                })
+                    .then(
+                        (res) => {
+                            if (res.ok) {
+                                return res.json()
+                            } else {
+                                console.log(res)
+                                throw new Error('BIG_ERROR')
     }
+
+                        }
+                    )
+                    .then((PromiseValue) => {
+                        var data = this.state.db;
+                        for (var i = 0; i < 4; i++) {
+                            data[i].body = PromiseValue.statusChangeTime[i] ? PromiseValue.statusChangeTime[i].split(" ")[0] : '';
+                        }
+                        this.setState({
+                            dataSource: this.state.dataSource.cloneWithRows([]),
+                            db: data,
+                            currentPage: PromiseValue.statusChangeTime.length - 1
+                        });
+                    })
+                    .catch((error) => { // 错误处理
+
+                    })
+                    .done(() => {
+                        console.log(this.state.dataSource)
+                        this.setState({
+                            dataSource: this.state.dataSource.cloneWithRows(this.state.db)
+                        })
+                    });
+            }
+        })
+
+    }
+
     renderPage = (rowData) => {
+        console.log(rowData)
         return (
             <View style={{
                 flex: 3,
@@ -117,7 +167,7 @@ export default class Process extends React.Component {
                     flexDirection: 'row'
                 }}>
                     <View style={{
-                        width: width / 3 - 20,
+                        width: width / 2 - 20,
                         height: 300,
                         alignItems: 'flex-start',
                         justifyContent: 'center'
@@ -127,11 +177,11 @@ export default class Process extends React.Component {
                             stepCount={4}
                             direction='vertical'
                             currentPosition={this.state.currentPage}
-                            labels={data.map(item => item.title)}
+                            labels={this.state.db.map(item => item.title)}
                         />
                     </View>
                     <View style={{
-                        width: width / 3 - 20,
+                        width: width / 2 - 20,
                         height: 300,
                         alignItems: 'flex-start',
                         justifyContent: 'center'
@@ -166,8 +216,7 @@ export default class Process extends React.Component {
 }
 
 Process.propTypes = {
-
 }
 Process.defaultProps = {
-
+    id: 0
 }

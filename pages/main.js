@@ -12,7 +12,8 @@ import {
     Image,
     TouchableOpacity,
     ListView,
-    BackHandler
+    BackHandler,
+    AsyncStorage
 } from 'react-native';
 import TopBar from '../components/topbar';
 import Button from '../components/button';
@@ -36,40 +37,12 @@ import Addtask from './addtask';
 var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
 const rowHeight = 40;
-const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-const data = [
-    {
-        name: '任务a',
-        star: 2,
-        time: 8,
-        start_date: '3.1',
-        end_date: '4.1'
-    },
-    {
-        name: '任务c',
-        star: 3,
-        time: 8,
-        start_date: '2.11',
-        end_date: '4.1'
-    },
-    {
-        name: '任务d',
-        star: 2,
-        time: 8,
-        start_date: '2.1',
-        end_date: '4.3'
-    },
-    {
-        name: '任务e',
-        star: 2,
-        time: 8,
-        start_date: '1.8',
-        end_date: '3.1'
-    },
-]
+
 export default class Main extends Component {
     constructor(props) {
         super(props);
+        var ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
+        var data = [];
         this.state = {
             isModal: false,
             menuleft: new Animated.Value(0),
@@ -81,8 +54,73 @@ export default class Main extends Component {
             circlebottom1: new Animated.Value(0),
             circle: new Animated.Value(0),
             rotateValue: new Animated.Value(0),
-            isshow: false
+            isshow: false,
+            db: data,
+            mineInfo: {}
         };
+        AsyncStorage.getItem('token', (error, result) => {
+            if (!error) {
+                var url = 'http://120.78.74.75:8080/demo/s/getTasksOfUser'; // 接口url
+                fetch(url, {
+                    "method": 'GET',
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + result
+                    },
+                })
+                    .then(
+                        (res) => {
+                            if (res.ok) {
+                                return res.json()
+                            } else {
+                                console.log(res)
+                                throw new Error('BIG_ERROR')
+                            }
+
+                        }
+                    ).then((PromiseValue) => {
+                        this.setState({
+                            dataSource: this.state.dataSource.cloneWithRows(PromiseValue),
+                            db: PromiseValue,
+                        });
+                    })
+                    .catch((error) => { // 错误处理
+
+                    })
+                    .done();
+            }
+        })
+        AsyncStorage.getItem('token', (error, result) => {
+            if (!error) {
+
+                var url = 'http://120.78.74.75:8080/demo/s/getInfoOfCurrentUser'; // 接口url
+                fetch(url, {
+                    "method": 'GET',
+                    "headers": {
+                        "Content-Type": "application/json",
+                        "Authorization": "Bearer " + result
+                    },
+                })
+                    .then(
+                        (res) => {
+                            if (res.ok) {
+                                return res.json()
+                            } else {
+                                throw new Error('BIG_ERROR')
+                            }
+
+                        }
+                    ).then((PromiseValue) => {
+                        this.setState({
+                            mineInfo: PromiseValue
+                        })
+                    })
+                    .catch((error) => { // 错误处理
+
+                    })
+                    .done();
+            }
+        })
     }
     componentDidMount() {
         BackHandler.addEventListener('hardwareBackPress', this.handleBack.bind(this))
@@ -99,12 +137,15 @@ export default class Main extends Component {
             return false;
         }
     }
-    press() {
+    onPress(rowData) {
         const { navigator } = this.props;
         if (navigator) {
             navigator.push({
                 name: 'Task',
-                component: Task
+                component: Task,
+                params: {
+                    taskInfo: rowData
+                }
             });
         }
     }
@@ -116,12 +157,17 @@ export default class Main extends Component {
     renderPage = (rowData) => {
         return (
             <Tasklist
-                name={rowData.name}
-                star={rowData.star}
-                time={rowData.time}
-                end_date={rowData.end_date}
-                start_date={rowData.start_date}
-                press={() => this.press()} />
+                name={rowData.taskName}
+                star={rowData.securityLv}
+                time={rowData.workload}
+                end_date={rowData.taskEnd ? rowData.taskEnd.substring(0, 10) : null}
+                start_date={rowData.taskBegin ? rowData.taskBegin.substring(0, 10) : null}
+                press={() => {
+                    this.onPress(rowData)
+                }
+                }
+
+            />
         )
     }
     onRequestClose() {
@@ -141,7 +187,7 @@ export default class Main extends Component {
     circlepress() {
         if (this.state.isshow == false) {
             this.setState({
-                isshow:true
+                isshow: true
             })
             Animated.parallel([
                 Animated.timing(
@@ -195,7 +241,7 @@ export default class Main extends Component {
             ]).start();
         } else {
             this.setState({
-                isshow:false
+                isshow: false
             })
             Animated.parallel([
                 Animated.timing(
@@ -325,7 +371,10 @@ export default class Main extends Component {
         if (navigator) {
             navigator.push({
                 name: 'Selfmessage',
-                component: Selfmessage
+                component: Selfmessage,
+                params: {
+                    mineInfo: this.state.mineInfo
+                }
             });
         }
     }
@@ -395,9 +444,12 @@ export default class Main extends Component {
                             backgroundColor: 'white',
                             left: this.state.menuleft1.interpolate({ inputRange: [0, 1], outputRange: [0, 0.7 * width] })
                         }}>
-                            <Selfcard />
+                            <Selfcard
+                                name={this.state.mineInfo.name}
+                                company={this.state.mineInfo.company}
+                                source={{ uri: 'http://120.78.74.75:8010/' + this.state.mineInfo.workNumber + '/1.jpg' }} />
                             <Menulist source={require('../icon/user-blue.png')} content={'个人信息'} press={() => this.Jump_to_selfmessage()} />
-                            {/* <Menulist source={require('../icon/copy-blue.png')} content={'我的协议'} press={() => this.Jump_to_agreement()} /> */}
+                            <Menulist source={require('../icon/copy-blue.png')} content={'我的协议'} press={() => this.Jump_to_agreement()} />
                             <Menulist source={require('../icon/cog-blue.png')} content={'设置'} press={() => this.Jump_to_setting()} />
                             <View style={{
                                 position: 'absolute',
@@ -513,7 +565,7 @@ export default class Main extends Component {
                     backgroundColor: 'rgba(0,150,136,0.5)',
                     right: this.state.circleright.interpolate({ inputRange: [0, 1], outputRange: [20, 80] }),
                     bottom: this.state.circlebottom.interpolate({ inputRange: [0, 1], outputRange: [100, 110] }),
-                    transform:[{rotate: this.state.rotateValue.interpolate({inputRange: [0, 1],outputRange: ['0deg', '360deg']})}]
+                    transform: [{ rotate: this.state.rotateValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }]
                 }}>
                     <TouchableOpacity style={{
                         height: 30,
@@ -521,7 +573,7 @@ export default class Main extends Component {
                         borderRadius: 15,
                         justifyContent: 'center',
                         alignItems: 'center'
-                    }} onPress={()=>this.Jump_to_addproject()}>
+                    }} onPress={() => this.Jump_to_addproject()}>
                         <Image source={require('../icon/folder-open.png')}></Image>
                     </TouchableOpacity>
                 </Animated.View>
@@ -533,7 +585,7 @@ export default class Main extends Component {
                     backgroundColor: 'rgba(0,150,136,0.5)',
                     right: this.state.circleright1.interpolate({ inputRange: [0, 1], outputRange: [20, 50] }),
                     bottom: this.state.circlebottom1.interpolate({ inputRange: [0, 1], outputRange: [100, 150] }),
-                    transform:[{rotate: this.state.rotateValue.interpolate({inputRange: [0, 1],outputRange: ['0deg', '360deg']})}]
+                    transform: [{ rotate: this.state.rotateValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] }) }]
                 }}>
                     <TouchableOpacity style={{
                         height: 30,
@@ -541,7 +593,7 @@ export default class Main extends Component {
                         borderRadius: 15,
                         justifyContent: 'center',
                         alignItems: 'center'
-                    }} onPress={()=>this.Jump_to_addtask()}>
+                    }} onPress={() => this.Jump_to_addtask()}>
                         <Image source={require('../icon/page.png')}></Image>
                     </TouchableOpacity>
                 </Animated.View>
