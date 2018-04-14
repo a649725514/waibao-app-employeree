@@ -25,7 +25,7 @@ var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
 const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
 const data = ['高', '中', '低'];
-const data1 = ['JavaScript'];
+const data1 = [];
 const data3 = ['项目A','项目B','项目C'];
 export default class Addtask extends Component {
     constructor(props) {

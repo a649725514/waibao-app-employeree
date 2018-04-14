@@ -12,8 +12,8 @@ import Transferitem from './transferitem';
 var width = Dimensions.get('window').width;
 var height = Dimensions.get('window').height;
 const ds = new ListView.DataSource({ rowHasChanged: (r1, r2) => r1 !== r2 });
-const data1 = ['高', '中', '低'];
-const data2 = ['JavaScript'];
+const data1 = [ "马化腾","高德伟","霍建华", "张开涛", "李林峰","霍斯特曼", "雷布斯","李彦宏", "丁磊", '陈奕迅', "李天","洪金宝","约翰",];;
+const data2 = [];
 const data3 = [];
 const data4 = [];
 export default class Transfer extends React.Component {
